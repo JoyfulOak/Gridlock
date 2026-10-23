@@ -20,7 +20,7 @@ and definition of done.
   and obtaining approval when the change is privileged or potentially disruptive.
 - Never run the Gridlock shell or agent as root. Keep optional AI providers
   offline-safe and do not transmit user data without explicit opt-in.
-- Treat Sway pointer-centering support, GTK4 layer-shell support, FreeBSD
+- Treat Hyprland pointer-centering support, GTK4 layer-shell support, FreeBSD
   graphics/input, and every claimed CPU architecture as unverified until tested
   on the actual supported FreeBSD target. Do not substitute a weaker behavior
   and label it as meeting acceptance criteria.
@@ -33,7 +33,7 @@ and definition of done.
 
 ## Current repository state
 
-The repository is an early prototype. Its Rust workspace, Sway adapter, CLI,
+The repository is an early prototype. Its Rust workspace, Hyprland adapter, CLI,
 session launcher, status provider, and local plugin manifest tools still need a
 successful build and FreeBSD target validation. The full graphical shell,
 launcher, settings, notifications, plugin execution/isolation, agent service,

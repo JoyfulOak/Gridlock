@@ -3,25 +3,25 @@
 ## Phase 0 — Environment audit and feasibility spike
 
 - [x] Inspect the repository and current host without changing system state.
-- [x] Confirm upstream FreeBSD documentation describes Wayland and Sway usage.
-- [x] Identify candidate Sway pointer cursor command and its deprecation status.
-- [x] Create the Cargo workspace and an initial Sway-backed CLI/session slice.
+- [x] Confirm upstream FreeBSD documentation describes the Wayland platform.
+- [x] Identify Hyprland IPC dispatchers requiring target validation.
+- [x] Replace the Sway-first architecture with a Hyprland-backed CLI/session slice.
 - [ ] Select the initial FreeBSD release and obtain an amd64 target.
 - [ ] Audit target release, architecture, virtualization, graphics, input, and package versions.
-- [ ] Start a minimal Sway session on the target and verify keyboard and pointer input.
+- [ ] Start a minimal Hyprland session on the target and verify keyboard and pointer input.
 - [ ] Verify directional focus plus pointer centering on the target, including failure cases.
 - [ ] Establish an aarch64 target and UTM compatibility evidence.
 - [ ] Record supported package versions, protocol versions, and build/runtime dependencies.
 
-**Exit condition:** a target FreeBSD machine can run Sway and accept keyboard and
+**Exit condition:** a target FreeBSD machine can run Hyprland and accept keyboard and
 pointer input, and the selected pointer-centering method is exercised against
-the packaged Sway version. Document any architecture or VM fallback.
+the packaged Hyprland version. Document any architecture or VM fallback.
 
-**Started:** workspace, core configuration/directional-focus model, Sway IPC
-client, CLI controls, session launcher, and Sway starter config exist. They are
-build- and test-verified on macOS and cross-target type-checked for FreeBSD
-amd64 and aarch64. Native FreeBSD build and compositor/runtime validation remain
-open.
+**Started:** workspace, core configuration/directional-focus model, Hyprland
+IPC client, CLI controls, session launcher, and Hyprland starter config exist.
+The earlier Sway implementation was built and tested on macOS and cross-target
+type-checked for FreeBSD amd64 and aarch64. The replacement backend still needs
+a build check and native FreeBSD compositor/runtime validation.
 
 **Plugin foundation started early:** the SDK manifest schema and a local
 install/inspect/list/enable/disable/remove tool exist. Plugin execution,
@@ -32,7 +32,7 @@ unimplemented.
 
 - Cargo workspace, core models, typed TOML configuration, versioned local IPC,
   session lifecycle, structured logs, and `gridlock` CLI.
-- Launch Sway and a minimal shell process; document restart and TTY recovery.
+- Launch Hyprland and a minimal shell process; document restart and TTY recovery.
 - Build and smoke-test on an actual supported FreeBSD target.
 - Register a FreeBSD Wayland session entry so a compatible login manager can
   start Gridlock after user authentication.
@@ -48,6 +48,8 @@ unimplemented.
 
 - Top bar, launcher, system menu, shortcut viewer, notifications, themes, and
   keyboard-accessible settings foundation.
+- [ ] Validate the Hyprland + Waybar top bar on a FreeBSD target and verify the
+  adapter's IPC and pointer-centering behavior.
 
 ## Phase 4 — Plugin runtime and SDK
 

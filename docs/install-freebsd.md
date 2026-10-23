@@ -1,51 +1,38 @@
 # Install the current Gridlock prototype on FreeBSD
 
-Gridlock does not have a FreeBSD package yet. This guide builds the current
-source tree and starts it manually from a TTY. The current shell is a Swaybar
-status provider; the GTK shell, launcher, settings UI, notifications, AI
-diagnostics, crash monitor, and system integrations are not implemented.
+Gridlock has no FreeBSD package yet. This guide builds the current source and
+starts it manually from a TTY. Hyprland is the only supported compositor in
+this project. The graphical shell, launcher, settings UI, notifications, AI
+diagnostics, crash monitor, and system integrations remain incomplete.
 
-## 1. Install build and Wayland prerequisites
+## 1. Install prerequisites
 
-As root, install the package manager dependencies:
-
-```sh
-pkg install git rust wayland seatd sway xterm
-```
-
-The locked workspace currently requires Rust/Cargo 1.85 or newer. Check the
-installed compiler before building with `rustc --version` and `cargo --version`.
-
-The FreeBSD Wayland setup also requires graphics to be configured, `evdev`
-support in the kernel, and the login user in the `video` group. Add the user
-using the actual account name, then log out and back in so the new group applies:
+Check package availability for the target FreeBSD release and architecture
+before installing. As root, install the packages:
 
 ```sh
-pw groupmod video -m YOUR_USER
-sysrc seatd_enable="YES"
-service seatd start
+pkg install git rust wayland seatd hyprland waybar xterm
 ```
 
-The exact graphics driver depends on the FreeBSD release and hardware. Resolve
-that before starting Sway; this project does not change kernel modules, drivers,
-or system configuration automatically.
+The locked workspace requires Rust/Cargo 1.85 or newer. Graphics setup,
+`evdev` input support, and seat access depend on the machine. Resolve those
+through the FreeBSD documentation for the target before starting Hyprland.
+Gridlock does not change kernel modules, drivers, services, or system
+configuration automatically.
 
 ## 2. Build from the repository
 
-Use the current Gridlock source checkout and build as your regular user. Cargo
-will fetch Rust crate dependencies from the configured registry. If these
-working-tree changes have not yet been published, copy this repository folder
-to the VM instead of cloning the remote branch.
+Build as the regular user. If the working-tree changes have not been
+published, copy this repository folder to the VM instead of cloning the
+remote branch.
 
 ```sh
 cargo build --workspace --locked --release
-cargo test --workspace --locked
 ```
 
-The workspace has passed tests on macOS and `cargo check` for the FreeBSD amd64
-and aarch64 targets, but it has not been built or run on FreeBSD. If either
-Cargo command fails on the VM, keep the diagnostic output; do not proceed to
-login-manager setup until the build and tests pass.
+The earlier Sway-based workspace was built on macOS and cross-checked for
+FreeBSD targets. The Hyprland adapter has not yet been built on a FreeBSD host
+or exercised in a graphical session.
 
 ## 3. Install binaries and user configuration
 
@@ -56,49 +43,37 @@ install -m 755 target/release/gridlock-session "$HOME/.local/bin/gridlock-sessio
 install -m 755 target/release/gridlock-shell "$HOME/.local/bin/gridlock-shell"
 install -m 755 target/release/gridlock-plugin-host "$HOME/.local/bin/gridlock-plugin-host"
 cp config/defaults/gridlock.toml "$HOME/.config/gridlock/config.toml"
-cp config/defaults/sway.conf "$HOME/.config/gridlock/sway.conf"
+cp config/defaults/hyprland.conf "$HOME/.config/gridlock/hyprland.conf"
+cp config/defaults/waybar.jsonc "$HOME/.config/gridlock/waybar.jsonc"
+cp config/defaults/waybar.css "$HOME/.config/gridlock/waybar.css"
+install -m 755 scripts/gridlock-network-status.sh "$HOME/.local/bin/gridlock-network-status"
 ```
 
-Add `~/.local/bin` to `PATH` in your shell startup file. In the current shell:
+Add `~/.local/bin` to `PATH`. Hyprland IPC discovery uses
+`XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket.sock`; set the
+FreeBSD-appropriate runtime directory in your session if the system does not
+provide it.
+
+## 4. Start the session
+
+From a local TTY as the regular user:
 
 ```sh
-export PATH="$HOME/.local/bin:$PATH"
+gridlock-session
 ```
 
-On FreeBSD 14.1 and newer, `XDG_RUNTIME_DIR` is set automatically. On older
-releases, set it to `/var/run/user/$(id -u)` for the session.
+Gridlock starts `Hyprland` with `~/.config/gridlock/hyprland.conf`. The
+experimental Waybar bar includes workspaces, focused title, clock, route
+status, sndio audio, and battery when available. Audio and battery modules
+depend on target hardware and Waybar build options. The power menu and native
+Gridlock launcher are not implemented yet.
 
-Before starting Sway, check that the configuration parses:
-
-```sh
-sway -C -c "$HOME/.config/gridlock/sway.conf"
-```
-
-## 4. Start Gridlock manually
-
-From a local TTY as your regular user:
-
-```sh
-gridlock-session "$HOME/.config/gridlock/sway.conf"
-```
-
-This runs Sway in the foreground. A login manager session entry is provided at
-`packaging/freebsd/wayland-sessions/gridlock.desktop`; see
-`packaging/freebsd/README.md` to install it into the system session directory.
-The entry lets a compatible login manager launch Gridlock after user
-authentication. To show a graphical login screen at boot, follow the optional
-SDDM setup below.
-
-The current configuration provides
-Super+Arrow directional focus, Super+Shift+Arrow window movement, workspace
-shortcuts, close/fullscreen/floating actions, Super+Enter for the configured
-`xterm`, and a top Swaybar with workspaces, focused title, and time.
-
-To return to the TTY, press Super+Shift+E or switch to another virtual terminal.
+To return to the TTY, use the configured Super+Shift+E binding or switch to
+another virtual terminal.
 
 ## 5. Check the prototype
 
-Inside Sway, open a terminal and run:
+Inside the session, open a terminal and run:
 
 ```sh
 gridlock status
@@ -106,21 +81,18 @@ gridlock config validate
 gridlock plugin list
 ```
 
-Directional focus currently uses Sway's `seat seat0 cursor set` command to
-center the pointer. Upstream marks that command deprecated in favor of a
-virtual-pointer protocol, and the FreeBSD packaged Sway behavior has not been
-tested. If focus works but pointer movement does not, set
-`pointer_follow_focus = false` in `~/.config/gridlock/config.toml` while testing
-the Sway command on your release. That disables pointer following and does not
+Directional focus reads `j/clients` from Hyprland IPC, then uses the
+`focuswindow` and `movecursor` dispatchers. Pointer-centering and dispatcher
+coordinate semantics remain unverified against a FreeBSD Hyprland build. If
+centering fails, set `pointer_follow_focus = false` in
+`~/.config/gridlock/config.toml`; that disables pointer following and does not
 meet the final acceptance criterion.
 
-## 6. Optional: show a login screen at boot with SDDM
+## 6. Optional: register with SDDM
 
-SDDM provides the graphical username/password screen; Gridlock is the session
-you select after signing in. This does not add a custom Gridlock greeter or
-enable passwordless auto-login. First install the release binaries into
-`/usr/local/bin` and register the session entry. From the repository directory,
-run these as root:
+SDDM provides the graphical login screen; Gridlock is the session selected
+after signing in. This does not add a custom greeter or enable auto-login.
+Install the release binaries and session entry as root:
 
 ```sh
 install -m 755 target/release/gridlock /usr/local/bin/gridlock
@@ -130,25 +102,12 @@ install -m 755 target/release/gridlock-plugin-host /usr/local/bin/gridlock-plugi
 install -d /usr/local/share/wayland-sessions
 install -m 644 packaging/freebsd/wayland-sessions/gridlock.desktop \
   /usr/local/share/wayland-sessions/gridlock.desktop
-```
-
-Then install and enable SDDM as root:
-
-```sh
 pkg install sddm
 sysrc sddm_enable="YES"
 ```
 
-Reboot to show the SDDM login screen. Choose **Gridlock (Wayland)** in its
-session chooser, then sign in. SDDM starts `gridlock-session` for the
-authenticated user, which starts Sway using that user's Gridlock Sway config.
-The SDDM Wayland session search path includes
-`/usr/local/share/wayland-sessions` on FreeBSD 15.1. SDDM and Gridlock session
-registration have not been tested together on a FreeBSD target, so retain a
-TTY login path for recovery.
-
-Enabling SDDM makes it the graphical login manager at boot. To undo that
-setting from a TTY, run as root:
+Retain a TTY login path for recovery. Session registration and SDDM have not
+been tested on a FreeBSD target. To disable SDDM from a TTY, run as root:
 
 ```sh
 sysrc sddm_enable="NO"

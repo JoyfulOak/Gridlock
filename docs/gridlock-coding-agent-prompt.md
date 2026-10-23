@@ -1,6 +1,9 @@
 # Gridlock — Master Coding Agent Prompt
 ## Build an Original AI-Native, Plugin-Based FreeBSD Tiling Desktop Inspired by Omarchy
 
+## Mandatory change from previous architecture
+This version replaces **Sway with Hyprland** as the primary Wayland compositor. Do not install, configure, or use Sway as Gridlock’s compositor. All implementation plans, examples, tests, packages, and documentation must target Hyprland.
+
 ## Your role
 You are the principal architect and implementation agent for a new open-source, native FreeBSD desktop environment. Deliver real, tested source code, not mockups or an endless plan. Work in small, verifiable milestones. The product is its own desktop shell, not a rebranded KDE, GNOME, XFCE, or port of Omarchy. Use Omarchy as a reference for interaction patterns, not as code to copy without license review.
 
@@ -29,18 +32,26 @@ You are the principal architect and implementation agent for a new open-source, 
 - Brand direction: restrained, dark-first, keyboard-first, clean geometric tiling; slogan optional: **Gridlock — Your desktop. Your rules.** Do not assume the name, domain, or trademark is legally available; perform checks before public distribution.
 
 ## Product vision
-Build a fast, keyboard-first, aesthetically cohesive FreeBSD desktop environment with a unified shell, automatic tiling, a persistent top bar, searchable menus, configurable shortcuts, native FreeBSD integrations, a versioned plugin SDK, and an AI troubleshooting agent system. The experience should feel like Omarchy while being original and modular. Users must be able to install extensions that change the appearance and behavior of the desktop without patching the core.
+Build a fast, keyboard-first, aesthetically cohesive FreeBSD desktop environment with a unified shell, automatic animated tiling, configurable layouts, a persistent top bar, searchable menus, configurable shortcuts, native FreeBSD integrations, a versioned plugin SDK, and an AI troubleshooting agent system. The experience should feel like Omarchy while being original and modular. Users must be able to install extensions that change the appearance and behavior of the desktop without patching the core.
 
 ## Non-negotiable interaction behavior
-1. **Super + Left/Right/Up/Down**: focus the nearest eligible window in that direction. Upon successful focus, move the mouse pointer to the geometric center of the newly focused window. If no eligible window exists, preserve current focus and pointer position. Expose a toggle for pointer-follow-focus and an option to exclude floating windows. Define multi-monitor behavior explicitly, including crossing display boundaries. Avoid triggering unintended hover actions if feasible. Verify pointer warp capability against the installed Sway version; Sway IPC alone may not provide pointer warping. If no supported compositor API exists, implement a narrowly scoped, documented compositor patch or backend extension rather than using unsafe fake input or claiming success.
+1. **Super + Left/Right/Up/Down**: focus the nearest eligible window in that direction. Upon successful focus, move the mouse pointer to the geometric center of the newly focused window. If no eligible window exists, preserve current focus and pointer position. Expose a toggle for pointer-follow-focus and an option to exclude floating windows. Define multi-monitor behavior explicitly, including crossing display boundaries. Avoid triggering unintended hover actions if feasible. Verify Hyprland directional focus (`movefocus`), window geometry and cursor positioning (`hyprctl cursorpos` is a query, not a warp operation) against the installed build. Investigate supported Hyprland dispatchers such as `movecursor` and their coordinate semantics; implement the focus-then-center operation with a validated native dispatcher or versioned compositor plugin. Do not simulate mouse input with unsafe injection or claim success without testing.
 2. **Super + Enter**: terminal. **Super + Space**: searchable launcher. **Super + K**: keyboard shortcut viewer. **Super + Q**: close focused window. **Super + F**: fullscreen. **Super + Shift + Space**: toggle floating. **Super + 1–9**: switch workspace. **Super + Shift + 1–9**: move focused window to workspace. Allow rebinding every shortcut, resolving conflicts, and displaying conflicts in the GUI.
 3. Top bar must show workspaces, focused window title, time, network, audio, battery when present, and power menu. Widgets and layout are extensible by plugins.
 4. The shell must provide launcher, quick settings, notification center, system/power menu, shortcut overlay, settings app, wallpaper/theme support, and consistent focus/keyboard accessibility.
 5. The desktop must remain functional with all optional AI providers offline or disabled.
 
+## Hyprland-specific engineering constraints
+- Treat Hyprland as the compositor and Gridlock as the original desktop shell, not as a renamed Hyprland configuration. Gridlock owns menus, bar, notifications, control center, plugin SDK, and agent services.
+- Keep Hyprland configuration generated from Gridlock-owned typed settings; never overwrite user-managed Hyprland files without consent. Support import, validation, diff, atomic write, and rollback.
+- Use Hyprland native layouts, animations, borders, gaps, decoration, and dispatchers; expose these through Gridlock Control and theme/plugin APIs. Detect unsupported features rather than guessing config keys.
+- Hyprland compositor plugins are ABI/version-sensitive and often native-code privileged. Keep ordinary Gridlock extensions out of the compositor; only use a tightly version-pinned, opt-in native compositor plugin if the pointer-centering feature or another requirement cannot be implemented via supported IPC.
+- Verify layer-shell and popup behavior with Hyprland and FreeBSD. Make sure shell crash/restart does not terminate the compositor or block keyboard access.
+- For FreeBSD ARM64 under UTM, explicitly test DRM/KMS, graphics drivers, seat management, rendering path and software-rendering fallback. Report if the VM cannot support a stable Hyprland session; do not mark that target supported without evidence.
+
 ## Technology baseline
 - OS: FreeBSD (amd64 and aarch64). Detect release and supported packages; do not hardcode Linux paths or services.
-- Display stack: Wayland. Use Sway as the initial compositor, with a compositor abstraction to permit a future replacement. Prefer a stable Sway release packaged for the target FreeBSD version.
+- Display stack: Wayland. Use Hyprland as the initial compositor, with a compositor abstraction to permit future replacement. Check FreeBSD ports/packages, build dependencies, ABI compatibility and Wayland backend support for each targeted FreeBSD release and architecture. Hyprland on FreeBSD may have platform-specific limitations; never assume upstream Linux instructions apply. Do not silently fall back to Hyprland.
 - Core implementation: Rust, split into libraries and processes with documented interfaces.
 - UI: GTK4 where practical. Confirm FreeBSD package availability and compatibility of any layer-shell/Wayland protocol bindings before committing. If GTK4 layer-shell integration is unavailable, choose a supported alternative and record why. Do not assume Linux-only GTK layer-shell libraries work on FreeBSD.
 - Configuration: TOML with typed schema, migration/versioning, atomic writes, backup, validation, and live reload.
@@ -53,7 +64,7 @@ Build a fast, keyboard-first, aesthetically cohesive FreeBSD desktop environment
 Implement independently restartable components:
 - `desktop-session`: session startup, environment, readiness, lifecycle, shutdown, compositor launch and supervision. No display manager dependency is required for initial MVP; optionally integrate one later.
 - `desktop-core`: stable internal models, configuration schema, event bus, error handling, plugin capability definitions, logging, IPC protocol.
-- `desktop-compositor-sway`: adapter for Sway IPC, workspace/window tree, focus/move commands, output topology, focus events, and pointer-centering implementation after capability validation. Avoid baking Sway-specific types into public plugin APIs.
+- `desktop-compositor-hyprland`: adapter for Hyprland IPC (command and event sockets), `hyprctl -j` window/workspace/monitor data, dispatchers, focus events, layout management and validated pointer-centering. Avoid baking Hyprland-specific types into public plugin APIs. Handle socket discovery using Hyprland instance signatures and FreeBSD runtime directory conventions; never assume `/run/user` exists.
 - `desktop-shell`: one coordinated visual shell owning the top bar, launcher, popup menus, notification center, and overlays. Separate components internally, but avoid unrelated styling and configuration systems.
 - `desktop-settings`: graphical settings app for appearance, shortcuts, displays, input, audio, network, plugins, AI, and troubleshooting. Only show controls that actually work; unavailable integrations should be labeled.
 - `desktop-plugin-host`: manifest validation, dependency resolution, install/upgrade/disable/remove, capability enforcement, sandboxed or isolated plugin execution, crash supervision, and rollback.
@@ -167,7 +178,7 @@ gridlock/
     gridlock-core/
     gridlock-session/
     gridlock-compositor-api/
-    gridlock-compositor-sway/
+    gridlock-compositor-hyprland/
     gridlock-shell/
     gridlock-control/
     gridlock-plugin-sdk/
@@ -192,14 +203,14 @@ You may adjust this structure when justified, but keep stable boundaries between
 
 ## Milestones and acceptance criteria
 ### Phase 0 — Environment audit and feasibility spike
-- Identify FreeBSD version, CPU architecture, virtualization platform, graphics devices, display/session setup, installed Sway/Wayland/GTK/Rust packages, and relevant supported protocol versions.
-- Prove that a minimal Wayland/Sway session can start and accept keyboard/mouse input on the actual machine. Record fallback if graphics support blocks it.
+- Identify FreeBSD version, CPU architecture, virtualization platform, graphics devices, display/session setup, installed Hyprland/Wayland/GTK/Rust packages, and relevant supported protocol versions.
+- Prove that a minimal Wayland/Hyprland session can start and accept keyboard/mouse input on the actual machine. Record fallback if graphics support blocks it.
 - Verify whether reliable pointer centering can be implemented with the chosen compositor and document the exact supported mechanism. This is a release blocker for the requested window-navigation feature.
 - Output a compatibility matrix for amd64, aarch64, and UTM; distinguish tested from planned.
 
 ### Phase 1 — Buildable desktop foundation
 - Create Cargo workspace, shared configuration, IPC, session lifecycle, structured logs, CLI, and tests.
-- Start Sway and launch a minimal shell process. Ensure crash/restart behavior and TTY recovery.
+- Start Hyprland and launch a minimal shell process. Ensure crash/restart behavior and TTY recovery.
 - Acceptance: repeatable build and documented launch on target FreeBSD.
 
 ### Phase 2 — Tiling and keyboard navigation
@@ -229,7 +240,7 @@ You may adjust this structure when justified, but keep stable boundaries between
 
 ## Testing and performance
 - Unit tests for direction selection, config migration, permission evaluation, manifest parsing, event routing, and redaction.
-- Integration tests for Sway IPC parsing, hotplug, launcher actions, plugin lifecycle, crash monitor, agent approvals, and rollback.
+- Integration tests for Hyprland IPC parsing, hotplug, launcher actions, plugin lifecycle, crash monitor, agent approvals, and rollback.
 - End-to-end manual test script for real FreeBSD graphical sessions; explicitly record what cannot be automated in a VM.
 - Profile idle CPU, RSS memory, startup latency, menu latency, shortcut response, and plugin overhead. Set measurable baselines after Phase 0; do not invent performance numbers.
 - Ensure shell restart does not terminate the compositor, and AI failure does not terminate the shell.

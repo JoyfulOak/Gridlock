@@ -18,7 +18,7 @@ fn main() {
             }
             Err(error) => {
                 eprintln!("gridlock-shell: {error}");
-                println!("Gridlock | Sway unavailable");
+                println!("Gridlock | Hyprland unavailable");
             }
         }
         thread::sleep(Duration::from_secs(interval.max(1)));
@@ -26,8 +26,8 @@ fn main() {
 }
 
 fn render_status() -> Result<String, String> {
-    let client =
-        gridlock_compositor_sway::SwayClient::from_env().map_err(|error| error.to_string())?;
+    let client = gridlock_compositor_hyprland::HyprlandClient::from_env()
+        .map_err(|error| error.to_string())?;
     let windows = client.windows().map_err(|error| error.to_string())?;
     let title: String = windows
         .iter()

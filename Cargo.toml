@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "crates/gridlock-core",
-    "crates/gridlock-compositor-sway",
+    "crates/gridlock-compositor-hyprland",
     "crates/gridlock-cli",
     "crates/gridlock-session",
     "crates/gridlock-shell",

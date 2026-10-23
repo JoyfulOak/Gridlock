@@ -5,7 +5,7 @@ An original, keyboard-first tiling desktop environment for FreeBSD.
 ## Project status
 
 Gridlock is in early Phase 1. It contains a Rust workspace and an initial
-Sway-backed CLI/session slice, but it has not been built or exercised on
+Hyprland-backed CLI/session slice, but it has not been built or exercised on
 FreeBSD, and it is not yet a complete desktop environment.
 
 See [STATUS.md](STATUS.md) for the host audit, evidence, and current blockers;
@@ -21,10 +21,10 @@ cargo build --workspace --locked
 cargo test --workspace --locked
 ```
 
-The workspace has been built and tested on macOS. FreeBSD amd64 and aarch64
-pass Rust cross-target checks, but still need native build and runtime tests.
-Sway IPC commands require a running Sway session with its socket exported in
-`SWAYSOCK`.
+The workspace has previously been built and tested on macOS. The Hyprland
+adapter requires a running Hyprland session with `XDG_RUNTIME_DIR` and
+`HYPRLAND_INSTANCE_SIGNATURE` set. Native FreeBSD build and runtime checks are
+still required.
 
 The current CLI includes `gridlock status`, `gridlock config validate`, basic
 window/workspace controls, `gridlock terminal`, and `gridlock plugin ...`.

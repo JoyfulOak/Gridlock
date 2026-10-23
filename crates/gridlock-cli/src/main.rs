@@ -18,7 +18,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
         }
         [command, subcommand, direction] if command == "window" && subcommand == "move" => {
             let direction: Direction = direction.parse()?;
-            sway()?.move_focused(direction).map_err(|error| error.to_string())
+            hyprland()?.move_focused(direction).map_err(|error| error.to_string())
         }
         [command, subcommand, direction, flag]
             if command == "window" && subcommand == "focus" && flag == "--no-center-pointer" =>
@@ -31,14 +31,14 @@ fn run(args: Vec<String>) -> Result<(), String> {
             focus(direction, Some(true))
         }
         [command, subcommand, number] if command == "workspace" && subcommand == "switch" => {
-            sway()?.switch_workspace(parse_workspace(number)?).map_err(|error| error.to_string())
+            hyprland()?.switch_workspace(parse_workspace(number)?).map_err(|error| error.to_string())
         }
         [command, subcommand, number] if command == "workspace" && subcommand == "move" => {
-            sway()?.move_focused_to_workspace(parse_workspace(number)?).map_err(|error| error.to_string())
+            hyprland()?.move_focused_to_workspace(parse_workspace(number)?).map_err(|error| error.to_string())
         }
-        [command, subcommand] if command == "window" && subcommand == "close" => sway()?.close_focused().map_err(|error| error.to_string()),
-        [command, subcommand] if command == "window" && subcommand == "fullscreen" => sway()?.toggle_fullscreen().map_err(|error| error.to_string()),
-        [command, subcommand] if command == "window" && subcommand == "floating" => sway()?.toggle_floating().map_err(|error| error.to_string()),
+        [command, subcommand] if command == "window" && subcommand == "close" => hyprland()?.close_focused().map_err(|error| error.to_string()),
+        [command, subcommand] if command == "window" && subcommand == "fullscreen" => hyprland()?.toggle_fullscreen().map_err(|error| error.to_string()),
+        [command, subcommand] if command == "window" && subcommand == "floating" => hyprland()?.toggle_floating().map_err(|error| error.to_string()),
         [command] if command == "terminal" => launch_terminal(),
         [command, operation] if command == "plugin" => plugin_command(operation, None),
         [command, operation, argument] if command == "plugin" => plugin_command(operation, Some(argument)),
@@ -46,8 +46,8 @@ fn run(args: Vec<String>) -> Result<(), String> {
     }
 }
 
-fn sway() -> Result<gridlock_compositor_sway::SwayClient, String> {
-    gridlock_compositor_sway::SwayClient::from_env().map_err(|error| error.to_string())
+fn hyprland() -> Result<gridlock_compositor_hyprland::HyprlandClient, String> {
+    gridlock_compositor_hyprland::HyprlandClient::from_env().map_err(|error| error.to_string())
 }
 
 fn parse_workspace(value: &str) -> Result<u8, String> {
@@ -100,7 +100,7 @@ fn plugin_command(operation: &str, argument: Option<&String>) -> Result<(), Stri
 fn focus(direction: &str, center_override: Option<bool>) -> Result<(), String> {
     let direction: Direction = direction.parse()?;
     let config = read_config()?;
-    let client = sway()?;
+    let client = hyprland()?;
     let center = center_override.unwrap_or(config.pointer_follow_focus);
     let moved = client
         .focus_direction(
@@ -118,11 +118,11 @@ fn focus(direction: &str, center_override: Option<bool>) -> Result<(), String> {
 }
 
 fn status() -> Result<(), String> {
-    let client = sway()?;
+    let client = hyprland()?;
     let windows = client.windows().map_err(|error| error.to_string())?;
     let focused = windows.iter().find(|window| window.focused);
     println!("Gridlock CLI 0.1.0");
-    println!("Compositor: Sway ({} windows)", windows.len());
+    println!("Compositor: Hyprland ({} windows)", windows.len());
     match focused {
         Some(window) => println!("Focused: {}", safe_title(&window.title)),
         None => println!("Focused: none"),

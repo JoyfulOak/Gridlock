@@ -1,17 +1,16 @@
 # Gridlock architecture decisions
 
-## ADR 0001 — Start with a Sway adapter behind a compositor boundary
+## ADR 0001 — Use Hyprland behind a compositor boundary
 
 - **Status:** Provisional
 - **Date:** 2026-10-23
-- **Decision:** Use Sway as the initial Wayland compositor and isolate its IPC
-  and command vocabulary behind a Gridlock compositor API. Keep Sway-specific
+- **Decision:** Use Hyprland as the initial Wayland compositor and isolate its IPC
+  and command vocabulary behind a Gridlock compositor API. Keep Hyprland-specific
   types out of plugin interfaces.
-- **Reason:** The FreeBSD Handbook documents Sway installation and operation.
-  Its IPC exposes the window tree, workspaces, outputs, events, and commands
-  needed for an initial adapter.
-- **Consequence:** Behavior and version compatibility still need verification
-  against the Sway package on a selected FreeBSD release.
+- **Reason:** The updated product brief selects Hyprland and its IPC exposes
+  clients, workspaces, monitors, events, and dispatchers needed for an adapter.
+- **Consequence:** Behavior and version compatibility need verification against
+  the Hyprland package on each selected FreeBSD release.
 
 ## ADR 0002 — GTK4 is the initial shell UI candidate
 
@@ -32,14 +31,12 @@
 - **Decision:** Do not ship Super+arrow navigation as satisfying the brief
   until the pointer reaches the newly focused window center after successful
   focus, and remains still if focus fails.
-- **Candidate mechanism:** Current upstream Sway documentation describes
-  `seat <seat> cursor set <x> <y>` as an absolute global-coordinate cursor
-  operation; that command is marked deprecated in favor of the virtual-pointer
-  Wayland protocol. The current Sway IPC accepts Sway commands, so this is a
-  candidate to test, not proof for the FreeBSD packaged Sway build.
+- **Candidate mechanism:** The adapter follows Hyprland IPC `dispatch` for
+  `focuswindow` and `movecursor`. The movecursor availability and coordinate
+  semantics have not been validated on a FreeBSD package.
 - **Consequence:** Verify coordinates, races, multi-output layouts, constraints,
-  and deprecation behavior on the selected package. If unsupported, evaluate a
-  documented compositor extension rather than fake input.
+  and dispatcher behavior on supported packages. If unsupported, evaluate a
+  version-pinned compositor extension rather than fake input.
 
 ## ADR 0004 — Keep initial implementation and runtime unprivileged
 
@@ -50,3 +47,13 @@
   scoped helper and require explicit authorization.
 - **Reason:** Limits impact from plugins and agent actions and follows the
   project brief's security requirements.
+
+## ADR 0005 — Make Hyprland the primary compositor
+
+- **Status:** Provisional
+- **Date:** 2026-10-23
+- **Decision:** Replace the Sway-first implementation with Hyprland as the
+  project's sole initial compositor. Use Waybar for the prototype status bar.
+- **Reason:** The supplied updated product brief selects Hyprland throughout.
+- **Consequence:** The new backend and bar have not been tested on FreeBSD;
+  pointer centering and full shell behavior remain unverified or incomplete.
