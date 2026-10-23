@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/gridlock-core",
+    "crates/gridlock-compositor-sway",
+    "crates/gridlock-cli",
+    "crates/gridlock-session",
+    "crates/gridlock-shell",
+    "crates/gridlock-plugin-sdk",
+    "crates/gridlock-plugin-host",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+rust-version = "1.78"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"

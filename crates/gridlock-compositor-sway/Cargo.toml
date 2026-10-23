@@ -1,0 +1,11 @@
+[package]
+name = "gridlock-compositor-sway"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+gridlock-core = { path = "../gridlock-core" }
+serde = { workspace = true }
+serde_json = "1"

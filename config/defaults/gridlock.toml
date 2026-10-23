@@ -1,0 +1,5 @@
+version = 1
+pointer_follow_focus = true
+exclude_floating_from_directional_focus = false
+terminal = "xterm"
+launcher = "gridlock-shell"

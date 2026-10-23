@@ -1,0 +1,13 @@
+[package]
+name = "gridlock-shell"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "gridlock-shell"
+path = "src/main.rs"
+
+[dependencies]
+gridlock-compositor-sway = { path = "../gridlock-compositor-sway" }

@@ -1,0 +1,10 @@
+id = "org.gridlock.examples.clock"
+name = "Example Clock Widget"
+version = "0.1.0"
+runtime = "data"
+architectures = ["amd64", "aarch64"]
+permissions = []
+
+[api]
+min = 1
+max = 1
