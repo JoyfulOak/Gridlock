@@ -11,19 +11,25 @@ FreeBSD, and it is not yet a complete desktop environment.
 See [STATUS.md](STATUS.md) for the host audit, evidence, and current blockers;
 [PLAN.md](PLAN.md) for milestones; [DECISIONS.md](DECISIONS.md) for architecture
 decisions; and [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for unverified or
-unsupported areas.
+unsupported areas. Coding agents should follow [AGENTS.md](AGENTS.md) and the
+complete [Gridlock coding-agent brief](docs/gridlock-coding-agent-prompt.md).
 
-## Build (once Rust is available)
+## Build (Rust/Cargo 1.85 or newer)
 
 ```sh
-cargo build --workspace
-cargo test --workspace
+cargo build --workspace --locked
+cargo test --workspace --locked
 ```
 
-These commands have not yet been run. Sway IPC commands require a running Sway
-session with its socket exported in `SWAYSOCK`.
+The workspace has been built and tested on macOS. FreeBSD amd64 and aarch64
+pass Rust cross-target checks, but still need native build and runtime tests.
+Sway IPC commands require a running Sway session with its socket exported in
+`SWAYSOCK`.
 
 The current CLI includes `gridlock status`, `gridlock config validate`, basic
 window/workspace controls, `gridlock terminal`, and `gridlock plugin ...`.
 Plugin package details and current runtime limits are in
 [docs/plugin-sdk.md](docs/plugin-sdk.md).
+
+For the current manual FreeBSD prototype setup, see
+[docs/install-freebsd.md](docs/install-freebsd.md).

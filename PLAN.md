@@ -19,7 +19,9 @@ the packaged Sway version. Document any architecture or VM fallback.
 
 **Started:** workspace, core configuration/directional-focus model, Sway IPC
 client, CLI controls, session launcher, and Sway starter config exist. They are
-not yet build-verified because Rust is unavailable on the current host.
+build- and test-verified on macOS and cross-target type-checked for FreeBSD
+amd64 and aarch64. Native FreeBSD build and compositor/runtime validation remain
+open.
 
 **Plugin foundation started early:** the SDK manifest schema and a local
 install/inspect/list/enable/disable/remove tool exist. Plugin execution,
@@ -32,6 +34,8 @@ unimplemented.
   session lifecycle, structured logs, and `gridlock` CLI.
 - Launch Sway and a minimal shell process; document restart and TTY recovery.
 - Build and smoke-test on an actual supported FreeBSD target.
+- Register a FreeBSD Wayland session entry so a compatible login manager can
+  start Gridlock after user authentication.
 
 ## Phase 2 — Tiling and keyboard navigation
 

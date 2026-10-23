@@ -76,8 +76,14 @@ impl PluginManifest {
         if self.name.trim().is_empty() || self.version.trim().is_empty() {
             return Err("plugin name and version are required".into());
         }
-        if self.api.min > self.api.max || self.api.min > PLUGIN_API_VERSION || self.api.max < PLUGIN_API_VERSION {
-            return Err(format!("plugin API range {}..={} does not support Gridlock Plugin SDK API {}", self.api.min, self.api.max, PLUGIN_API_VERSION));
+        if self.api.min > self.api.max
+            || self.api.min > PLUGIN_API_VERSION
+            || self.api.max < PLUGIN_API_VERSION
+        {
+            return Err(format!(
+                "plugin API range {}..={} does not support Gridlock Plugin SDK API {}",
+                self.api.min, self.api.max, PLUGIN_API_VERSION
+            ));
         }
         match self.runtime {
             PluginRuntime::Data if self.entrypoint.is_some() => {
@@ -90,18 +96,27 @@ impl PluginManifest {
         }
         if let Some(entrypoint) = &self.entrypoint {
             let path = Path::new(entrypoint);
-            if path.is_absolute() || path.components().any(|part| !matches!(part, std::path::Component::Normal(_))) {
+            if path.is_absolute()
+                || path
+                    .components()
+                    .any(|part| !matches!(part, std::path::Component::Normal(_)))
+            {
                 return Err("entrypoint must be a relative path inside the plugin package".into());
             }
         }
         for architecture in &self.architectures {
             if !matches!(architecture.as_str(), "amd64" | "aarch64") {
-                return Err(format!("unsupported architecture {architecture:?}; expected amd64 or aarch64"));
+                return Err(format!(
+                    "unsupported architecture {architecture:?}; expected amd64 or aarch64"
+                ));
             }
         }
         for dependency in &self.dependencies {
             if !valid_id(&dependency.id) || dependency.version.trim().is_empty() {
-                return Err(format!("invalid dependency declaration for {:?}", dependency.id));
+                return Err(format!(
+                    "invalid dependency declaration for {:?}",
+                    dependency.id
+                ));
             }
             if dependency.id == self.id {
                 return Err("a plugin cannot depend on itself".into());
@@ -138,18 +153,30 @@ max = 1
 
     #[test]
     fn accepts_current_data_plugin_manifest() {
-        assert_eq!(PluginManifest::parse(VALID).unwrap().runtime, PluginRuntime::Data);
+        assert_eq!(
+            PluginManifest::parse(VALID).unwrap().runtime,
+            PluginRuntime::Data
+        );
     }
 
     #[test]
     fn rejects_entrypoint_escape() {
-        let source = VALID.replace("runtime = \"data\"", "runtime = \"executable\"\nentrypoint = \"../run.sh\"");
-        assert!(PluginManifest::parse(&source).unwrap_err().contains("relative path"));
+        let source = VALID.replace(
+            "runtime = \"data\"",
+            "runtime = \"executable\"\nentrypoint = \"../run.sh\"",
+        );
+        assert!(PluginManifest::parse(&source)
+            .unwrap_err()
+            .contains("relative path"));
     }
 
     #[test]
     fn rejects_incompatible_api_range() {
-        let source = VALID.replace("min = 1", "min = 2").replace("max = 1", "max = 2");
-        assert!(PluginManifest::parse(&source).unwrap_err().contains("does not support"));
+        let source = VALID
+            .replace("min = 1", "min = 2")
+            .replace("max = 1", "max = 2");
+        assert!(PluginManifest::parse(&source)
+            .unwrap_err()
+            .contains("does not support"));
     }
 }

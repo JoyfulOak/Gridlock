@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Gridlock (Wayland)
+Comment=Keyboard-first Gridlock desktop session
+Exec=gridlock-session
+TryExec=gridlock-session
+Type=Application
+DesktopNames=Gridlock

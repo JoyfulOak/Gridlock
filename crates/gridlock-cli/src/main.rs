@@ -51,7 +51,9 @@ fn sway() -> Result<gridlock_compositor_sway::SwayClient, String> {
 }
 
 fn parse_workspace(value: &str) -> Result<u8, String> {
-    let number: u8 = value.parse().map_err(|_| "workspace must be a number from 1 through 9".to_string())?;
+    let number: u8 = value
+        .parse()
+        .map_err(|_| "workspace must be a number from 1 through 9".to_string())?;
     if !(1..=9).contains(&number) {
         return Err("workspace must be a number from 1 through 9".into());
     }
@@ -63,21 +65,36 @@ fn launch_terminal() -> Result<(), String> {
     Command::new(&config.terminal)
         .spawn()
         .map(|_| ())
-        .map_err(|error| format!("could not launch configured terminal {:?}: {error}", config.terminal))
+        .map_err(|error| {
+            format!(
+                "could not launch configured terminal {:?}: {error}",
+                config.terminal
+            )
+        })
 }
 
 fn plugin_command(operation: &str, argument: Option<&String>) -> Result<(), String> {
-    if !matches!(operation, "list" | "inspect" | "install" | "enable" | "disable" | "remove") {
+    if !matches!(
+        operation,
+        "list" | "inspect" | "install" | "enable" | "disable" | "remove"
+    ) {
         return Err(format!("unknown plugin operation {operation:?}"));
     }
-    let host = std::env::var_os("GRIDLOCK_PLUGIN_HOST").unwrap_or_else(|| "gridlock-plugin-host".into());
+    let host =
+        std::env::var_os("GRIDLOCK_PLUGIN_HOST").unwrap_or_else(|| "gridlock-plugin-host".into());
     let mut command = Command::new(host);
     command.arg(operation);
     if let Some(argument) = argument {
         command.arg(argument);
     }
-    let status = command.status().map_err(|error| format!("could not start plugin manager: {error}"))?;
-    if status.success() { Ok(()) } else { Err(format!("plugin manager exited with {status}")) }
+    let status = command
+        .status()
+        .map_err(|error| format!("could not start plugin manager: {error}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("plugin manager exited with {status}"))
+    }
 }
 
 fn focus(direction: &str, center_override: Option<bool>) -> Result<(), String> {
@@ -86,10 +103,16 @@ fn focus(direction: &str, center_override: Option<bool>) -> Result<(), String> {
     let client = sway()?;
     let center = center_override.unwrap_or(config.pointer_follow_focus);
     let moved = client
-        .focus_direction(direction, config.exclude_floating_from_directional_focus, center)
+        .focus_direction(
+            direction,
+            config.exclude_floating_from_directional_focus,
+            center,
+        )
         .map_err(|error| error.to_string())?;
     if !moved {
-        return Err(format!("no eligible window to the {direction:?}; focus and pointer were left unchanged"));
+        return Err(format!(
+            "no eligible window to the {direction:?}; focus and pointer were left unchanged"
+        ));
     }
     Ok(())
 }
@@ -108,7 +131,11 @@ fn status() -> Result<(), String> {
 }
 
 fn safe_title(value: &str) -> String {
-    value.chars().filter(|character| !character.is_control()).take(200).collect()
+    value
+        .chars()
+        .filter(|character| !character.is_control())
+        .take(200)
+        .collect()
 }
 
 fn config_path() -> Result<PathBuf, String> {
@@ -122,7 +149,9 @@ fn config_path() -> Result<PathBuf, String> {
 fn read_config() -> Result<Config, String> {
     let path = config_path()?;
     match std::fs::read_to_string(&path) {
-        Ok(source) => Config::parse(&source).map_err(|error| format!("{}: {error}", path.display())),
+        Ok(source) => {
+            Config::parse(&source).map_err(|error| format!("{}: {error}", path.display()))
+        }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Config::default()),
         Err(error) => Err(format!("{}: {error}", path.display())),
     }
@@ -131,7 +160,9 @@ fn read_config() -> Result<Config, String> {
 fn validate_config() -> Result<(), String> {
     let path = config_path()?;
     match std::fs::read_to_string(&path) {
-        Ok(source) => { Config::parse(&source).map_err(|error| format!("{}: {error}", path.display()))?; }
+        Ok(source) => {
+            Config::parse(&source).map_err(|error| format!("{}: {error}", path.display()))?;
+        }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             println!("No config exists at {}; defaults are valid", path.display());
             return Ok(());

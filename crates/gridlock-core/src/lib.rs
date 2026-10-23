@@ -62,7 +62,9 @@ impl std::str::FromStr for Direction {
             "right" => Ok(Self::Right),
             "up" => Ok(Self::Up),
             "down" => Ok(Self::Down),
-            _ => Err(format!("unknown direction {value:?}; use left, right, up, or down")),
+            _ => Err(format!(
+                "unknown direction {value:?}; use left, right, up, or down"
+            )),
         }
     }
 }
@@ -147,7 +149,12 @@ mod tests {
         Window {
             id,
             title: format!("window-{id}"),
-            rect: Rect { x, y, width: 100, height: 100 },
+            rect: Rect {
+                x,
+                y,
+                width: 100,
+                height: 100,
+            },
             focused,
             floating: false,
         }
@@ -155,8 +162,17 @@ mod tests {
 
     #[test]
     fn picks_nearest_window_in_direction() {
-        let windows = [window(1, 100, 100, true), window(2, 300, 100, false), window(3, 500, 100, false)];
-        assert_eq!(directional_target(&windows, Direction::Right, false).unwrap().id, 2);
+        let windows = [
+            window(1, 100, 100, true),
+            window(2, 300, 100, false),
+            window(3, 500, 100, false),
+        ];
+        assert_eq!(
+            directional_target(&windows, Direction::Right, false)
+                .unwrap()
+                .id,
+            2
+        );
     }
 
     #[test]
@@ -169,13 +185,24 @@ mod tests {
     fn can_exclude_floating_windows() {
         let mut floating = window(2, 300, 100, false);
         floating.floating = true;
-        let windows = [window(1, 100, 100, true), floating, window(3, 100, 300, false)];
+        let windows = [
+            window(1, 100, 100, true),
+            floating,
+            window(3, 100, 300, false),
+        ];
         assert_eq!(directional_target(&windows, Direction::Right, true), None);
-        assert_eq!(directional_target(&windows, Direction::Down, true).unwrap().id, 3);
+        assert_eq!(
+            directional_target(&windows, Direction::Down, true)
+                .unwrap()
+                .id,
+            3
+        );
     }
 
     #[test]
     fn config_requires_current_schema_version() {
-        assert!(Config::parse("version = 99").unwrap_err().contains("unsupported config version"));
+        assert!(Config::parse("version = 99")
+            .unwrap_err()
+            .contains("unsupported config version"));
     }
 }

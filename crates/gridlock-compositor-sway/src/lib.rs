@@ -22,7 +22,10 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::MissingSocket => write!(formatter, "SWAYSOCK is not set; Gridlock needs a running Sway session"),
+            Self::MissingSocket => write!(
+                formatter,
+                "SWAYSOCK is not set; Gridlock needs a running Sway session"
+            ),
             Self::Io(error) => write!(formatter, "Sway IPC I/O error: {error}"),
             Self::Protocol(error) => write!(formatter, "Sway IPC protocol error: {error}"),
             Self::Json(error) => write!(formatter, "invalid Sway JSON response: {error}"),
@@ -32,8 +35,16 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
-impl From<std::io::Error> for Error { fn from(error: std::io::Error) -> Self { Self::Io(error) } }
-impl From<serde_json::Error> for Error { fn from(error: serde_json::Error) -> Self { Self::Json(error) } }
+impl From<std::io::Error> for Error {
+    fn from(error: std::io::Error) -> Self {
+        Self::Io(error)
+    }
+}
+impl From<serde_json::Error> for Error {
+    fn from(error: serde_json::Error) -> Self {
+        Self::Json(error)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct SwayClient {
@@ -43,11 +54,15 @@ pub struct SwayClient {
 impl SwayClient {
     pub fn from_env() -> Result<Self, Error> {
         let socket = std::env::var_os("SWAYSOCK").ok_or(Error::MissingSocket)?;
-        Ok(Self { socket: PathBuf::from(socket) })
+        Ok(Self {
+            socket: PathBuf::from(socket),
+        })
     }
 
     pub fn at(socket: impl AsRef<Path>) -> Self {
-        Self { socket: socket.as_ref().to_path_buf() }
+        Self {
+            socket: socket.as_ref().to_path_buf(),
+        }
     }
 
     fn request(&self, kind: u32, payload: &[u8]) -> Result<Vec<u8>, Error> {
@@ -67,10 +82,14 @@ impl SwayClient {
         let size = u32::from_ne_bytes(header[6..10].try_into().unwrap()) as usize;
         let response_kind = u32::from_ne_bytes(header[10..14].try_into().unwrap());
         if response_kind != kind {
-            return Err(Error::Protocol(format!("reply type {response_kind} did not match request {kind}")));
+            return Err(Error::Protocol(format!(
+                "reply type {response_kind} did not match request {kind}"
+            )));
         }
         if size > MAX_REPLY_SIZE {
-            return Err(Error::Protocol(format!("reply exceeded {MAX_REPLY_SIZE} bytes")));
+            return Err(Error::Protocol(format!(
+                "reply exceeded {MAX_REPLY_SIZE} bytes"
+            )));
         }
         let mut response = vec![0; size];
         stream.read_exact(&mut response)?;
@@ -93,14 +112,18 @@ impl SwayClient {
 
     pub fn switch_workspace(&self, number: u8) -> Result<(), Error> {
         if !(1..=9).contains(&number) {
-            return Err(Error::Command("workspace number must be from 1 through 9".into()));
+            return Err(Error::Command(
+                "workspace number must be from 1 through 9".into(),
+            ));
         }
         self.command(&format!("workspace number {number}"))
     }
 
     pub fn move_focused_to_workspace(&self, number: u8) -> Result<(), Error> {
         if !(1..=9).contains(&number) {
-            return Err(Error::Command("workspace number must be from 1 through 9".into()));
+            return Err(Error::Command(
+                "workspace number must be from 1 through 9".into(),
+            ));
         }
         self.command(&format!("move container to workspace number {number}"))
     }
@@ -115,9 +138,15 @@ impl SwayClient {
         self.command(&format!("move {direction}"))
     }
 
-    pub fn close_focused(&self) -> Result<(), Error> { self.command("kill") }
-    pub fn toggle_fullscreen(&self) -> Result<(), Error> { self.command("fullscreen toggle") }
-    pub fn toggle_floating(&self) -> Result<(), Error> { self.command("floating toggle") }
+    pub fn close_focused(&self) -> Result<(), Error> {
+        self.command("kill")
+    }
+    pub fn toggle_fullscreen(&self) -> Result<(), Error> {
+        self.command("fullscreen toggle")
+    }
+    pub fn toggle_floating(&self) -> Result<(), Error> {
+        self.command("floating toggle")
+    }
 
     pub fn center_cursor(&self, rect: Rect) -> Result<(), Error> {
         let (x, y) = rect.center();
@@ -131,14 +160,26 @@ impl SwayClient {
         let response = self.request(IPC_COMMAND, command.as_bytes())?;
         let results: Vec<CommandResult> = serde_json::from_slice(&response)?;
         if let Some(failure) = results.iter().find(|result| !result.success) {
-            return Err(Error::Command(failure.error.clone().unwrap_or_else(|| "command failed".into())));
+            return Err(Error::Command(
+                failure
+                    .error
+                    .clone()
+                    .unwrap_or_else(|| "command failed".into()),
+            ));
         }
         Ok(())
     }
 
-    pub fn focus_direction(&self, direction: Direction, exclude_floating: bool, center_pointer: bool) -> Result<bool, Error> {
+    pub fn focus_direction(
+        &self,
+        direction: Direction,
+        exclude_floating: bool,
+        center_pointer: bool,
+    ) -> Result<bool, Error> {
         let windows = self.windows()?;
-        let Some(target) = gridlock_core::directional_target(&windows, direction, exclude_floating).cloned() else {
+        let Some(target) =
+            gridlock_core::directional_target(&windows, direction, exclude_floating).cloned()
+        else {
             return Ok(false);
         };
         self.focus_window(target.id)?;
@@ -171,8 +212,14 @@ struct Node {
     shell: Option<String>,
 }
 
-fn collect_windows(node: &Node, inherited_floating: bool, inherited_visible: bool, output: &mut Vec<Window>) {
-    let floating = inherited_floating || node.shell.as_deref() == Some("floating")
+fn collect_windows(
+    node: &Node,
+    inherited_floating: bool,
+    inherited_visible: bool,
+    output: &mut Vec<Window>,
+) {
+    let floating = inherited_floating
+        || node.shell.as_deref() == Some("floating")
         || node.node_type.as_deref() == Some("floating_con");
     let visible = inherited_visible && node.visible.unwrap_or(true);
     let children = node.nodes.as_deref().unwrap_or_default();

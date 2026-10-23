@@ -26,12 +26,20 @@ fn main() {
 }
 
 fn render_status() -> Result<String, String> {
-    let client = gridlock_compositor_sway::SwayClient::from_env().map_err(|error| error.to_string())?;
+    let client =
+        gridlock_compositor_sway::SwayClient::from_env().map_err(|error| error.to_string())?;
     let windows = client.windows().map_err(|error| error.to_string())?;
-    let title = windows
+    let title: String = windows
         .iter()
         .find(|window| window.focused)
-        .map(|window| window.title.chars().filter(|character| !character.is_control()).take(200).collect())
+        .map(|window| {
+            window
+                .title
+                .chars()
+                .filter(|character| !character.is_control())
+                .take(200)
+                .collect()
+        })
         .unwrap_or_else(|| "Desktop".into());
     let time = std::process::Command::new("date")
         .arg("+%H:%M")
